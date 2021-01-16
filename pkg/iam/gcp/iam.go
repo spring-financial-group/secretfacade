@@ -1,4 +1,4 @@
-package gcp
+package gcpiam
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-func DefaultCredentials(ctx context.Context) (*google.Credentials, error) {
-	adc, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+func DefaultCredentials() (*google.Credentials, error) {
+	adc, err := google.FindDefaultCredentials(context.TODO(), "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
 		return nil, err
 	}

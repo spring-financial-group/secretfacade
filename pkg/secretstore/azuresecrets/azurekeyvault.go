@@ -19,7 +19,7 @@ type azureKeyVaultSecretManager struct {
 	Creds azureiam.Credentials
 }
 
-func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, secretVersion string) (string, error) {
+func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, _ string) (string, error) {
 	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
 		return "", errors.Wrap(err, "")
@@ -28,7 +28,7 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create key ops client")
 	}
-	bundle, err := keyClient.GetSecret(context.TODO(), vaultUrl.String(), secretName, secretVersion)
+	bundle, err := keyClient.GetSecret(context.TODO(), vaultUrl.String(), secretName, "")
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to retrieve secret %s from vault %s", secretName, vaultUrl)
 	}

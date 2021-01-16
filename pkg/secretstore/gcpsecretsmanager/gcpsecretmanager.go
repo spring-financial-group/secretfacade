@@ -8,6 +8,7 @@ import (
 	"github.com/chrismellard/secretfacade/pkg/iam/gcp"
 	"github.com/chrismellard/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 	"google.golang.org/grpc"
@@ -15,10 +16,15 @@ import (
 	"google.golang.org/grpc/credentials/oauth"
 )
 
-type GcpSecretsManagerOperations struct {
+func NewGcpSecretsManager(creds google.Credentials) secretstore.Interface {
+	return &gcpSecretsManager{creds}
 }
 
-func (g *GcpSecretsManagerOperations) SetSecret(projectId string, secretName string, secretValue *secretstore.SecretValue) error {
+type gcpSecretsManager struct {
+	creds google.Credentials
+}
+
+func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secretValue *secretstore.SecretValue) error {
 
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
@@ -47,22 +53,22 @@ func (g *GcpSecretsManagerOperations) SetSecret(projectId string, secretName str
 	return nil
 }
 
-func (_ *GcpSecretsManagerOperations) GetSecret(projectId string, secretName string, _ string) (string, error) {
+func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, _ string) (string, error) {
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
 	defer closer()
 
-	secret, err := getSecret(client, projectId, secretName)
+	secret, err := getSecretValue(client, projectId, secretName)
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
-	return secret.String(), nil
+	return string(secret.Data), nil
 }
 
 func getSecretOpsClient() (*secretmanager.Client, func(), error) {
-	creds, err := gcp.DefaultCredentials(context.TODO())
+	creds, err := gcpiam.DefaultCredentials()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "")
 	}
@@ -104,8 +110,21 @@ func getSecret(client *secretmanager.Client, projectId string, secretName string
 		Name: fmt.Sprintf("projects/%s/secrets/%s", projectId, secretName),
 	}
 	secret, err := client.GetSecret(context.TODO(), req)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
 	return secret, nil
+}
+
+func getSecretValue(client *secretmanager.Client, projectId string, secretName string) (*secretmanagerpb.SecretPayload, error) {
+
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", projectId, secretName),
+	}
+	secret, err := client.AccessSecretVersion(context.TODO(), req)
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+	return secret.Payload, nil
 }
