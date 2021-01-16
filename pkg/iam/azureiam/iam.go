@@ -1,6 +1,7 @@
-package azure
+package azureiam
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
@@ -18,6 +19,73 @@ type Credentials interface {
 	TenantID() string
 	SubscriptionID() string
 	UseManagedIdentity() bool
+}
+
+func NewEnvironmentCredentials() (Credentials, error) {
+	settings, err := auth.GetSettingsFromEnvironment()
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+
+	isMSIEnvironment := adal.MSIAvailable(context.TODO(), adal.CreateSender())
+	if !isMSIEnvironment && (settings.Values[auth.ClientSecret] == "" || settings.Values[auth.ClientID] == "") {
+		return nil, fmt.Errorf("no client secret or client id found on environment and not running within MSI enabled context")
+	}
+	useMSI := false
+	if isMSIEnvironment && (settings.Values[auth.ClientSecret] == "" || settings.Values[auth.ClientID] == "") {
+		useMSI = true
+	}
+
+	if useMSI {
+		if settings.Values[auth.TenantID] == "" || settings.Values[auth.SubscriptionID] == "" {
+			return nil, fmt.Errorf("")
+		}
+		return &environmentCredentials{
+			tenantId:           settings.Values[auth.TenantID],
+			subscriptionId:     settings.Values[auth.SubscriptionID],
+			useManagedIdentity: true,
+		}, nil
+	}
+
+	if settings.Values[auth.ClientID] == "" || settings.Values[auth.ClientSecret] == "" ||
+		settings.Values[auth.TenantID] == "" || settings.Values[auth.SubscriptionID] == "" {
+		return nil, fmt.Errorf("")
+	}
+	return &environmentCredentials{
+		clientId:           settings.Values[auth.ClientID],
+		clientSecret:       settings.Values[auth.ClientSecret],
+		tenantId:           settings.Values[auth.TenantID],
+		subscriptionId:     settings.Values[auth.SubscriptionID],
+		useManagedIdentity: false,
+	}, nil
+}
+
+type environmentCredentials struct {
+	clientId           string
+	clientSecret       string
+	tenantId           string
+	subscriptionId     string
+	useManagedIdentity bool
+}
+
+func (e environmentCredentials) ClientID() string {
+	return e.clientId
+}
+
+func (e environmentCredentials) ClientSecret() string {
+	return e.clientSecret
+}
+
+func (e environmentCredentials) TenantID() string {
+	return e.tenantId
+}
+
+func (e environmentCredentials) SubscriptionID() string {
+	return e.subscriptionId
+}
+
+func (e environmentCredentials) UseManagedIdentity() bool {
+	return e.useManagedIdentity
 }
 
 func Environment() (*azure.Environment, error) {
