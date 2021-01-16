@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"github.com/chrismellard/secretfacade/pkg/iam/gcp"
+	"github.com/chrismellard/secretfacade/pkg/iam/gcpiam"
 	"github.com/chrismellard/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"

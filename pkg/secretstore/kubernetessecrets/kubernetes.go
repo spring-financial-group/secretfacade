@@ -1,4 +1,4 @@
-package kubernetes
+package kubernetessecrets
 
 import (
 	"context"
@@ -12,13 +12,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type KubernetesSecretManager struct {
-	kubeClient  kubernetes.Interface
-	Annotations map[string]string
-	SecretType  string
+func NewKubernetesSecretManager(kubeClient kubernetes.Interface) secretstore.Interface {
+	return &kubernetesSecretManager{kubeClient: kubeClient}
 }
 
-func (k KubernetesSecretManager) GetSecret(namespace string, secretName string, secretKey string) (string, error) {
+type kubernetesSecretManager struct {
+	kubeClient kubernetes.Interface
+}
+
+func (k kubernetesSecretManager) GetSecret(namespace string, secretName string, secretKey string) (string, error) {
 	secret, err := k.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get secret %s from namespace %s", secretName, namespace)
@@ -34,7 +36,7 @@ func (k KubernetesSecretManager) GetSecret(namespace string, secretName string, 
 	return "", fmt.Errorf("failed to get secret %s from namespace %s", secretName, namespace)
 }
 
-func (k KubernetesSecretManager) SetSecret(namespace string, secretName string, secretValue *secretstore.SecretValue) error {
+func (k kubernetesSecretManager) SetSecret(namespace string, secretName string, secretValue *secretstore.SecretValue) error {
 	create := false
 	secretInterface := k.kubeClient.CoreV1().Secrets(namespace)
 	secret, err := secretInterface.Get(context.TODO(), secretName, metav1.GetOptions{})
@@ -52,7 +54,7 @@ func (k KubernetesSecretManager) SetSecret(namespace string, secretName string, 
 		}
 	}
 
-	secret.Type = corev1.SecretType(k.SecretType)
+	secret.Type = corev1.SecretTypeOpaque
 	if secret.Data == nil {
 		secret.Data = map[string][]byte{}
 	}
@@ -61,14 +63,6 @@ func (k KubernetesSecretManager) SetSecret(namespace string, secretName string, 
 		secret.Data[k] = []byte(v)
 	}
 
-	if k.Annotations != nil {
-		if secret.Annotations == nil {
-			secret.Annotations = map[string]string{}
-		}
-		for k, v := range k.Annotations {
-			secret.Annotations[k] = v
-		}
-	}
 	if secretValue.Labels != nil {
 		if secret.Labels == nil {
 			secret.Labels = map[string]string{}
