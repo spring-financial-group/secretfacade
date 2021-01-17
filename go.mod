@@ -12,6 +12,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.5.1
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	google.golang.org/api v0.36.0
 	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f

@@ -2,8 +2,17 @@ package fake
 
 import "github.com/chrismellard/secretfacade/pkg/secretstore"
 
-type FakeSecretManagerFactory struct{}
+type FakeSecretManagerFactory struct {
+	secretStore *FakeSecretStore
+}
 
-func (_ FakeSecretManagerFactory) NewSecretManager(_ secretstore.SecretStoreType) (secretstore.Interface, error) {
-	return NewFakeSecretStore(), nil
+func (f *FakeSecretManagerFactory) NewSecretManager(_ secretstore.SecretStoreType) (secretstore.Interface, error) {
+	if f.secretStore == nil {
+		f.secretStore = NewFakeSecretStore()
+	}
+	return f.secretStore, nil
+}
+
+func (f FakeSecretManagerFactory) GetSecretStore() *FakeSecretStore {
+	return f.secretStore
 }

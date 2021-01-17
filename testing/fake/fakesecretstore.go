@@ -6,11 +6,11 @@ import (
 	"github.com/chrismellard/secretfacade/pkg/secretstore"
 )
 
-func NewFakeSecretStore() secretstore.Interface {
-	return &fakeSecretStore{secretStores: map[string]map[string]secretType{}}
+func NewFakeSecretStore() *FakeSecretStore {
+	return &FakeSecretStore{secretStores: map[string]map[string]secretType{}}
 }
 
-type fakeSecretStore struct {
+type FakeSecretStore struct {
 	secretStores map[string]map[string]secretType
 }
 
@@ -19,7 +19,7 @@ type secretType struct {
 	values     secretstore.SecretValue
 }
 
-func (f fakeSecretStore) GetSecret(location string, secretName string, secretKey string) (string, error) {
+func (f FakeSecretStore) GetSecret(location string, secretName string, secretKey string) (string, error) {
 	store := f.secretStores[location]
 	secret := store[secretName]
 	if secretKey == "" {
@@ -33,7 +33,7 @@ func (f fakeSecretStore) GetSecret(location string, secretName string, secretKey
 	return "", fmt.Errorf("unable to find key %s in secret %s", secretKey, secretName)
 }
 
-func (f fakeSecretStore) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
+func (f FakeSecretStore) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
 	var secrets map[string]secretType
 	var ok bool
 	if secrets, ok = f.secretStores[location]; !ok {
