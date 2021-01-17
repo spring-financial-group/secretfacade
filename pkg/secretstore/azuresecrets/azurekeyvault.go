@@ -38,7 +38,11 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 	return *bundle.Value, nil
 }
 
-func (a *azureKeyVaultSecretManager) SetSecret(vaultUrl string, secretName string, secretValue *secretstore.SecretValue) error {
+func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName string, secretValue *secretstore.SecretValue) error {
+	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
+	if err != nil {
+		return errors.Wrap(err, "")
+	}
 	keyClient, err := getSecretOpsClient(a.Creds)
 	if err != nil {
 		return errors.Wrap(err, "unable to create key ops client")
@@ -47,7 +51,7 @@ func (a *azureKeyVaultSecretManager) SetSecret(vaultUrl string, secretName strin
 	params := kvops.SecretSetParameters{
 		Value: &secretString,
 	}
-	_, err = keyClient.SetSecret(context.TODO(), vaultUrl, secretName, params)
+	_, err = keyClient.SetSecret(context.TODO(), vaultUrl.String(), secretName, params)
 
 	if err != nil {
 		return errors.Wrap(err, "unable to create key ops client")
