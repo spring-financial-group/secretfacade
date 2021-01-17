@@ -61,8 +61,11 @@ func (v vaultSecretManager) SetSecret(location string, secretName string, secret
 	for k, v := range secretValue.PropertyValues {
 		newSecretData[k] = v
 	}
+	data := map[string]interface{}{
+		"data": newSecretData,
+	}
 
-	_, err = v.vaultApi.Logical().Write(fmt.Sprintf("/secret/data/%s", secretName), newSecretData)
+	_, err = v.vaultApi.Logical().Write(fmt.Sprintf("/secret/data/%s", secretName), data)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
