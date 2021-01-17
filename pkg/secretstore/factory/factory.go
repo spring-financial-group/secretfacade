@@ -15,7 +15,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewSecretManager(storeType secretstore.SecretStoreType) (secretstore.Interface, error) {
+type SecretManagerFactory struct{}
+
+func (_ SecretManagerFactory) NewSecretManager(storeType secretstore.SecretStoreType) (secretstore.Interface, error) {
 	switch storeType {
 	case secretstore.SecretStoreTypeAzure:
 		envCreds, err := azureiam.NewEnvironmentCredentials()
