@@ -6,6 +6,7 @@ type SecretValue struct {
 	Value          string
 	PropertyValues map[string]string
 	Labels         map[string]string
+	Overwrite      bool
 }
 
 func (sv *SecretValue) ToString() string {

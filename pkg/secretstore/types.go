@@ -8,4 +8,5 @@ const (
 	SecretStoreTypeAzure      SecretStoreType = "azureKeyVault"
 	SecretStoreTypeGoogle     SecretStoreType = "gcpSecretsManager"
 	SecretStoreTypeKubernetes SecretStoreType = "kubernetes"
+	SecretStoreTypeVault      SecretStoreType = "vault"
 )

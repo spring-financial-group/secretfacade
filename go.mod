@@ -10,6 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.5
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
+	github.com/hashicorp/vault/api v1.0.4
 	github.com/pkg/errors v0.9.1
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	google.golang.org/api v0.36.0

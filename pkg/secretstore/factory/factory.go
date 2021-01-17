@@ -6,10 +6,12 @@ import (
 	"github.com/chrismellard/secretfacade/pkg/iam/azureiam"
 	"github.com/chrismellard/secretfacade/pkg/iam/gcpiam"
 	"github.com/chrismellard/secretfacade/pkg/iam/kubernetesiam"
+	"github.com/chrismellard/secretfacade/pkg/iam/vaultiam"
 	"github.com/chrismellard/secretfacade/pkg/secretstore"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/azuresecrets"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/gcpsecretsmanager"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/kubernetessecrets"
+	"github.com/chrismellard/secretfacade/pkg/secretstore/vaultsecrets"
 	"github.com/pkg/errors"
 )
 
@@ -33,6 +35,12 @@ func NewSecretManager(storeType secretstore.SecretStoreType) (secretstore.Interf
 			return nil, errors.Wrap(err, "")
 		}
 		return kubernetessecrets.NewKubernetesSecretManager(client), nil
+	case secretstore.SecretStoreTypeVault:
+		creds, err := vaultiam.NewEnvironmentCreds()
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+		return vaultsecrets.NewVaultSecretManager(creds.Token, creds.CaCertPath)
 	}
 	return nil, fmt.Errorf("unable to create manager for storeType %s", string(storeType))
 }
