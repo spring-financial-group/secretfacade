@@ -10,6 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.5
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
+	github.com/aws/aws-sdk-go v1.36.28
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1

@@ -3,11 +3,13 @@ package factory
 import (
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/chrismellard/secretfacade/pkg/iam/azureiam"
 	"github.com/chrismellard/secretfacade/pkg/iam/gcpiam"
 	"github.com/chrismellard/secretfacade/pkg/iam/kubernetesiam"
 	"github.com/chrismellard/secretfacade/pkg/iam/vaultiam"
 	"github.com/chrismellard/secretfacade/pkg/secretstore"
+	"github.com/chrismellard/secretfacade/pkg/secretstore/awssecretsmanager"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/azuresecrets"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/gcpsecretsmanager"
 	"github.com/chrismellard/secretfacade/pkg/secretstore/kubernetessecrets"
@@ -43,6 +45,12 @@ func (_ SecretManagerFactory) NewSecretManager(storeType secretstore.SecretStore
 			return nil, errors.Wrap(err, "")
 		}
 		return vaultsecrets.NewVaultSecretManager(creds.Token, creds.CaCertPath)
+	case secretstore.SecretStoreTypeAws:
+		sess, err := session.NewSession()
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+		return awssecretsmanager.NewAwsSecretManager(sess), nil
 	}
 	return nil, fmt.Errorf("unable to create manager for storeType %s", string(storeType))
 }
