@@ -14,6 +14,7 @@ func TestGetAwsSecretManager(t *testing.T) {
 	assert.NoError(t, err)
 	mgr := awssecretsmanager.NewAwsSecretManager(s)
 	secret, err := mgr.GetSecret("ap-southeast-2", "prod/db/creds", "")
+	assert.NoError(t, err)
 	assert.NotEmpty(t, secret)
 }
 
