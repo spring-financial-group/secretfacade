@@ -22,6 +22,6 @@ func TestSetAwsSecretManager(t *testing.T) {
 	s, err := session.NewSession()
 	assert.NoError(t, err)
 	mgr := awssecretsmanager.NewAwsSecretManager(s)
-	err = mgr.SetSecret("ap-southeast-2", "test/db/creds", &secretstore.SecretValue{Value: "supersecret"})
+	err = mgr.SetSecret("ap-southeast-2", "dev/db/creds", &secretstore.SecretValue{Value: "supersecret"})
 	assert.NoError(t, err)
 }

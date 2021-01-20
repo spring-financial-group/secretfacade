@@ -14,11 +14,11 @@ import (
 func InClusterClient() (kubernetes.Interface, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error getting in cluster config for k8s")
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error creating clientset from in cluster config for k8s")
 	}
 	return clientset, nil
 }
@@ -28,12 +28,12 @@ func OutOfClusterClient() (kubernetes.Interface, error) {
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error getting config for out of cluster k8s")
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error creating clientset for out of cluster k8s")
 	}
 	return clientset, nil
 }

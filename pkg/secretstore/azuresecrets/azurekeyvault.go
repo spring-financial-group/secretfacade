@@ -22,7 +22,7 @@ type azureKeyVaultSecretManager struct {
 func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, _ string) (string, error) {
 	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error getting secret for Azure Key Vault for secret %s from vault %s", secretName, vaultName)
 	}
 	keyClient, err := getSecretOpsClient(a.Creds)
 	if err != nil {
@@ -41,7 +41,7 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName string, secretValue *secretstore.SecretValue) error {
 	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrapf(err, "error setting Azure Key Vault secret %s in vault %s", secretName, vaultName)
 	}
 	keyClient, err := getSecretOpsClient(a.Creds)
 	if err != nil {

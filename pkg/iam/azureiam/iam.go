@@ -24,7 +24,7 @@ type Credentials interface {
 func NewEnvironmentCredentials() (Credentials, error) {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error getting Azure credentials from environment")
 	}
 
 	isMSIEnvironment := adal.MSIAvailable(context.TODO(), adal.CreateSender())
@@ -38,7 +38,7 @@ func NewEnvironmentCredentials() (Credentials, error) {
 
 	if useMSI {
 		if settings.Values[auth.TenantID] == "" || settings.Values[auth.SubscriptionID] == "" {
-			return nil, fmt.Errorf("")
+			return nil, fmt.Errorf("AZURE_TENANT_ID and AZURE_SUBSCRIPTION_ID are mandatory environment variables for MSI authentication")
 		}
 		return &environmentCredentials{
 			tenantId:           settings.Values[auth.TenantID],
@@ -49,7 +49,7 @@ func NewEnvironmentCredentials() (Credentials, error) {
 
 	if settings.Values[auth.ClientID] == "" || settings.Values[auth.ClientSecret] == "" ||
 		settings.Values[auth.TenantID] == "" || settings.Values[auth.SubscriptionID] == "" {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_SUBSCRIPTION_ID are mandatory environment variables for client credentials authentication")
 	}
 	return &environmentCredentials{
 		clientId:           settings.Values[auth.ClientID],

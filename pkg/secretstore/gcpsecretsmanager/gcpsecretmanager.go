@@ -29,7 +29,7 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrapf(err, "error setting GCP Secrets Manager secret %s in project %s", secretName, projectId)
 	}
 	defer closer()
 
@@ -38,12 +38,12 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 	if err != nil {
 		secret, err = createSecret(client, projectId, secretName)
 		if err != nil {
-			return errors.Wrap(err, "")
+			return errors.Wrapf(err, "error creating new secret %s in GCP secret manager project %s", secretName, projectId)
 		}
 	} else if secretValue.Value == "" && secretValue.PropertyValues != nil {
 		sv, err := getSecretValue(client, projectId, secretName)
 		if err != nil {
-			return errors.Wrap(err, "")
+			return errors.Wrapf(err, "error getting GCP secrets manager secret value for secret name %s in project %s", secretName, projectId)
 		}
 		existingSecretProps, err = getSecretPropertyMap(sv)
 	}
@@ -56,7 +56,7 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 	}
 	_, err = client.AddSecretVersion(context.TODO(), req)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrapf(err, "unable to set secret %s in GCP secret manager project %s", secretName, projectId)
 	}
 	return nil
 }
@@ -64,19 +64,19 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, secretKey string) (string, error) {
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrap(err, "error creating GCP secret manager client")
 	}
 	defer closer()
 
 	secret, err := getSecretValue(client, projectId, secretName)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error getting secret %s for GCP secret manager in project %s", secretName, projectId)
 	}
 	var secretString string
 	if secretKey != "" {
 		secretString, err = getSecretProperty(secret, secretKey)
 		if err != nil {
-			return "", errors.Wrap(err, "")
+			return "", errors.Wrapf(err, "error retrieving secret property from secret %s returned from GCP secrets manager in project %s", secretName, projectId)
 		}
 	} else {
 		secretString = string(secret.Data)
@@ -88,7 +88,7 @@ func getSecretPropertyMap(v *secretmanagerpb.SecretPayload) (map[string]string, 
 	m := make(map[string]string)
 	err := json.Unmarshal(v.Data, &m)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error unmarshalling GCP secrets manager secret payload in to map[string]string")
 	}
 	return m, nil
 }
@@ -96,7 +96,7 @@ func getSecretPropertyMap(v *secretmanagerpb.SecretPayload) (map[string]string, 
 func getSecretProperty(v *secretmanagerpb.SecretPayload, propertyName string) (string, error) {
 	m, err := getSecretPropertyMap(v)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error reading property %s from secret JSON object", propertyName)
 	}
 	return m[propertyName], nil
 }
@@ -104,7 +104,7 @@ func getSecretProperty(v *secretmanagerpb.SecretPayload, propertyName string) (s
 func getSecretOpsClient() (*secretmanager.Client, func(), error) {
 	creds, err := gcpiam.DefaultCredentials()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "")
+		return nil, nil, errors.Wrap(err, "error getting GCP default credentials")
 	}
 	client, err := secretmanager.NewClient(context.TODO(),
 		option.WithGRPCDialOption(
@@ -133,7 +133,7 @@ func createSecret(client *secretmanager.Client, projectId string, secretName str
 	}
 	secret, err := client.CreateSecret(context.TODO(), req)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrapf(err, "error creating secret %s in GCP secrets manager for project %s", secretName, projectId)
 	}
 	return secret, nil
 }
@@ -146,7 +146,7 @@ func getSecret(client *secretmanager.Client, projectId string, secretName string
 	secret, err := client.GetSecret(context.TODO(), req)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrapf(err, "error getting secret %s for GCP secrets manager project %s", secretName, projectId)
 	}
 	return secret, nil
 }
@@ -158,7 +158,7 @@ func getSecretValue(client *secretmanager.Client, projectId string, secretName s
 	}
 	secret, err := client.AccessSecretVersion(context.TODO(), req)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrapf(err, "error getting secret value for secret %s for GCP secrets manager project %s", secretName, projectId)
 	}
 	return secret.Payload, nil
 }

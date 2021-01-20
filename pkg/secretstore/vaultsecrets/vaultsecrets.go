@@ -14,11 +14,11 @@ func NewVaultSecretManager(vaultToken string, caCertPath string) (secretstore.In
 		CACert: caCertPath,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error configuring TLS ca cert for Hashicorp Vault API")
 	}
 	client, err := api.NewClient(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrap(err, "error creating Hasicorp Vault API client")
 	}
 	client.SetToken(vaultToken)
 	return &vaultSecretManager{client}, nil
@@ -31,15 +31,15 @@ type vaultSecretManager struct {
 func (v vaultSecretManager) GetSecret(location string, secretName string, secretKey string) (string, error) {
 	secret, err := getSecret(v.vaultApi, location, secretName)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error getting secret %s from Hasicorp vault %s", secretName, location)
 	}
 	mapData, err := getSecretData(secret)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error converting secret data retrieved for secret %s from Hashicorp Vault %s", secretName, location)
 	}
 	secretString, err := getSecretKeyString(mapData, secretKey)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrapf(err, "error converting string data for secret %s from Hashicorp Vault %s", secretName, location)
 	}
 	return secretString, nil
 }
@@ -47,14 +47,14 @@ func (v vaultSecretManager) GetSecret(location string, secretName string, secret
 func (v vaultSecretManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
 	secret, err := getSecret(v.vaultApi, location, secretName)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrapf(err, "error getting secret %s in Hashicorp vault %s prior to setting", secretName, location)
 	}
 
 	newSecretData := map[string]interface{}{}
 	if secret != nil && !secretValue.Overwrite {
 		newSecretData, err = getSecretData(secret)
 		if err != nil {
-			return errors.Wrap(err, "")
+			return errors.Wrapf(err, "error retrieving secret data in payload for secret %s in Hashicorp Vault %s", secretName, location)
 		}
 	}
 
@@ -67,7 +67,7 @@ func (v vaultSecretManager) SetSecret(location string, secretName string, secret
 
 	_, err = v.vaultApi.Logical().Write(fmt.Sprintf("/secret/data/%s", secretName), data)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrapf(err, "error writing secret %s to Hashicorp Vault %s", secretName, location)
 	}
 	return nil
 }
@@ -75,12 +75,12 @@ func (v vaultSecretManager) SetSecret(location string, secretName string, secret
 func getSecret(client *api.Client, location string, secretName string) (*api.Secret, error) {
 	err := client.SetAddress(location)
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrapf(err, "error setting location of Hashicorp vault %s on client", location)
 	}
 	logical := client.Logical()
 	secret, err := logical.Read(fmt.Sprintf("/secret/data/%s", secretName))
 	if err != nil {
-		return nil, errors.Wrap(err, "")
+		return nil, errors.Wrapf(err, "error reading secret %s from Hashicorp Vault API at %s", secretName, location)
 	}
 	return secret, nil
 }
@@ -88,11 +88,11 @@ func getSecret(client *api.Client, location string, secretName string) (*api.Sec
 func getSecretData(secret *api.Secret) (map[string]interface{}, error) {
 	data, ok := secret.Data["data"]
 	if !ok {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("data payload does not exist in Hasicorp Vault secret")
 	}
 	mapData, ok := data.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("data is not of type map[string]interface{} in Hashicorp Vault secret")
 	}
 	return mapData, nil
 }
@@ -100,11 +100,11 @@ func getSecretData(secret *api.Secret) (map[string]interface{}, error) {
 func getSecretKeyString(secretData map[string]interface{}, secretKey string) (string, error) {
 	value, ok := secretData[secretKey]
 	if !ok {
-		return "", fmt.Errorf("")
+		return "", fmt.Errorf("%s does not occur in secret data", secretKey)
 	}
 	stringValue, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("")
+		return "", fmt.Errorf("non string data type found in secret data for key %s", secretKey)
 	}
 	return stringValue, nil
 }

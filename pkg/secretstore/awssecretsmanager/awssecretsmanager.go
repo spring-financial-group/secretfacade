@@ -24,7 +24,7 @@ func (a awsSecretsManager) GetSecret(location string, secretName string, _ strin
 	mgr.Config.Region = &location
 	result, err := mgr.GetSecretValue(input)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrap(err, "error retrieving secret from aws secret manager")
 	}
 	return *result.SecretString, nil
 }
@@ -36,9 +36,10 @@ func (a awsSecretsManager) SetSecret(location string, secretName string, secretV
 	}
 	mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
 	mgr.Config.Region = &location
+	// TODO - Put a fix in here to detect if secret already exists
 	_, err := mgr.CreateSecret(input)
 	if err != nil {
-		return errors.Wrap(err, "")
+		return errors.Wrap(err, "error setting secret for aws secret manager")
 	}
 	return nil
 }

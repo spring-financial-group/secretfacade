@@ -24,31 +24,31 @@ func (_ SecretManagerFactory) NewSecretManager(storeType secretstore.SecretStore
 	case secretstore.SecretStoreTypeAzure:
 		envCreds, err := azureiam.NewEnvironmentCredentials()
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			return nil, errors.Wrap(err, "error getting azure creds when attempting to create secret manager via factory")
 		}
 		return azuresecrets.NewAzureKeyVaultSecretManager(envCreds), nil
 	case secretstore.SecretStoreTypeGoogle:
 		creds, err := gcpiam.DefaultCredentials()
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			return nil, errors.Wrap(err, "error getting Google creds when attempting to create secret manager via factory")
 		}
 		return gcpsecretsmanager.NewGcpSecretsManager(*creds), nil
 	case secretstore.SecretStoreTypeKubernetes:
 		client, err := kubernetesiam.GetClient()
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			return nil, errors.Wrap(err, "error getting Kubernetes creds when attempting to create secret manager via factory")
 		}
 		return kubernetessecrets.NewKubernetesSecretManager(client), nil
 	case secretstore.SecretStoreTypeVault:
 		creds, err := vaultiam.NewEnvironmentCreds()
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			return nil, errors.Wrap(err, "error getting Hashicorp Vault creds when attempting to create secret manager via factory")
 		}
 		return vaultsecrets.NewVaultSecretManager(creds.Token, creds.CaCertPath)
 	case secretstore.SecretStoreTypeAws:
 		sess, err := session.NewSession()
 		if err != nil {
-			return nil, errors.Wrap(err, "")
+			return nil, errors.Wrap(err, "error getting AWS creds when attempting to create secret manager via factory")
 		}
 		return awssecretsmanager.NewAwsSecretManager(sess), nil
 	}
