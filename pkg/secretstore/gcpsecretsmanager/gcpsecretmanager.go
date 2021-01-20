@@ -2,6 +2,7 @@ package gcpsecretsmanager
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
@@ -32,18 +33,25 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 	}
 	defer closer()
 
+	var existingSecretProps map[string]string
 	secret, err := getSecret(client, projectId, secretName)
 	if err != nil {
 		secret, err = createSecret(client, projectId, secretName)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
+	} else if secretValue.Value == "" && secretValue.PropertyValues != nil {
+		sv, err := getSecretValue(client, projectId, secretName)
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		existingSecretProps, err = getSecretPropertyMap(sv)
 	}
 
 	req := &secretmanagerpb.AddSecretVersionRequest{
 		Parent: secret.Name,
 		Payload: &secretmanagerpb.SecretPayload{
-			Data: []byte(secretValue.ToString()),
+			Data: []byte(secretValue.MergeExistingSecret(existingSecretProps)),
 		},
 	}
 	_, err = client.AddSecretVersion(context.TODO(), req)
@@ -53,7 +61,7 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 	return nil
 }
 
-func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, _ string) (string, error) {
+func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, secretKey string) (string, error) {
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
 		return "", errors.Wrap(err, "")
@@ -64,7 +72,33 @@ func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, _ str
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
-	return string(secret.Data), nil
+	var secretString string
+	if secretKey != "" {
+		secretString, err = getSecretProperty(secret, secretKey)
+		if err != nil {
+			return "", errors.Wrap(err, "")
+		}
+	} else {
+		secretString = string(secret.Data)
+	}
+	return secretString, nil
+}
+
+func getSecretPropertyMap(v *secretmanagerpb.SecretPayload) (map[string]string, error) {
+	m := make(map[string]string)
+	err := json.Unmarshal(v.Data, &m)
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+	return m, nil
+}
+
+func getSecretProperty(v *secretmanagerpb.SecretPayload, propertyName string) (string, error) {
+	m, err := getSecretPropertyMap(v)
+	if err != nil {
+		return "", errors.Wrap(err, "")
+	}
+	return m[propertyName], nil
 }
 
 func getSecretOpsClient() (*secretmanager.Client, func(), error) {
