@@ -65,7 +65,7 @@ func (v vaultSecretManager) SetSecret(location string, secretName string, secret
 		"data": newSecretData,
 	}
 
-	_, err = v.vaultApi.Logical().Write(fmt.Sprintf("/secret/data/%s", secretName), data)
+	_, err = v.vaultApi.Logical().Write(secretName, data)
 	if err != nil {
 		return errors.Wrapf(err, "error writing secret %s to Hashicorp Vault %s", secretName, location)
 	}
@@ -78,7 +78,7 @@ func getSecret(client *api.Client, location string, secretName string) (*api.Sec
 		return nil, errors.Wrapf(err, "error setting location of Hashicorp vault %s on client", location)
 	}
 	logical := client.Logical()
-	secret, err := logical.Read(fmt.Sprintf("/secret/data/%s", secretName))
+	secret, err := logical.Read(secretName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading secret %s from Hashicorp Vault API at %s", secretName, location)
 	}
