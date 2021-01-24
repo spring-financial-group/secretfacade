@@ -2,6 +2,7 @@ package azuresecrets
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -19,7 +20,7 @@ type azureKeyVaultSecretManager struct {
 	Creds azureiam.Credentials
 }
 
-func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, _ string) (string, error) {
+func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, secretKey string) (string, error) {
 	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
 		return "", errors.Wrapf(err, "error getting secret for Azure Key Vault for secret %s from vault %s", secretName, vaultName)
@@ -35,7 +36,16 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 	if bundle.Value == nil {
 		return "", errors.Wrapf(err, "secret is empty for secret %s in vault %s", secretName, vaultUrl)
 	}
-	return *bundle.Value, nil
+	var secretString string
+	if secretKey != "" {
+		secretString, err = getSecretProperty(bundle, secretKey)
+		if err != nil {
+			return "", errors.Wrapf(err, "error retrieving secret property from secret %s returned from Azure Key Vault %s", secretName, vaultName)
+		}
+	} else {
+		secretString = *bundle.Value
+	}
+	return secretString, nil
 }
 
 func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName string, secretValue *secretstore.SecretValue) error {
@@ -58,6 +68,25 @@ func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName stri
 	}
 
 	return nil
+}
+
+func getSecretPropertyMap(v kvops.SecretBundle) (map[string]string, error) {
+	m := make(map[string]string)
+	secretString := *v.Value
+	secretBytes := []byte(secretString)
+	err := json.Unmarshal(secretBytes, &m)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling GCP secrets manager secret payload in to map[string]string")
+	}
+	return m, nil
+}
+
+func getSecretProperty(v kvops.SecretBundle, propertyName string) (string, error) {
+	m, err := getSecretPropertyMap(v)
+	if err != nil {
+		return "", errors.Wrapf(err, "error reading property %s from secret JSON object", propertyName)
+	}
+	return m[propertyName], nil
 }
 
 func getSecretOpsClient(creds azureiam.Credentials) (*kvops.BaseClient, error) {
