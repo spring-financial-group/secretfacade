@@ -2,6 +2,7 @@ package secretstore
 
 import (
 	"encoding/json"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/imdario/mergo"
 )
@@ -9,8 +10,13 @@ import (
 type SecretValue struct {
 	Value          string
 	PropertyValues map[string]string
+	Annotations    map[string]string
 	Labels         map[string]string
-	Overwrite      bool
+
+	// SecretType is only really needed when using local secrets so that we
+	// can populate the Secret resource with the correct type
+	SecretType corev1.SecretType
+	Overwrite  bool
 }
 
 func (sv *SecretValue) ToString() string {

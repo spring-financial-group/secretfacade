@@ -55,6 +55,9 @@ func (k kubernetesSecretManager) SetSecret(namespace string, secretName string, 
 	}
 
 	secret.Type = corev1.SecretTypeOpaque
+	if string(secretValue.SecretType) != "" {
+		secret.Type = secretValue.SecretType
+	}
 	if secret.Data == nil {
 		secret.Data = map[string][]byte{}
 	}
@@ -69,6 +72,14 @@ func (k kubernetesSecretManager) SetSecret(namespace string, secretName string, 
 		}
 		for k, v := range secretValue.Labels {
 			secret.Labels[k] = v
+		}
+	}
+	if secretValue.Annotations != nil {
+		if secret.Annotations == nil {
+			secret.Annotations = map[string]string{}
+		}
+		for k, v := range secretValue.Annotations {
+			secret.Annotations[k] = v
 		}
 	}
 
