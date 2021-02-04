@@ -13,6 +13,10 @@ import (
 func TestAzureKey(t *testing.T) {
 
 	keyVaultName := os.Getenv("AZURE_KEY_VAULT")
+	if keyVaultName == "" {
+		t.SkipNow()
+		return
+	}
 	creds, err := azureiam.NewEnvironmentCredentials()
 	assert.NoError(t, err)
 	secretMgr := azuresecrets.NewAzureKeyVaultSecretManager(creds)
