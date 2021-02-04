@@ -1,4 +1,4 @@
-module github.com/chrismellard/secretfacade
+module github.com/jenkins-x-plugins/secretfacade
 
 go 1.15
 

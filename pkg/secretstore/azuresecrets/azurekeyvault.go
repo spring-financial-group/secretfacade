@@ -7,8 +7,8 @@ import (
 	"net/url"
 
 	kvops "github.com/Azure/azure-sdk-for-go/services/keyvault/v7.1/keyvault"
-	"github.com/chrismellard/secretfacade/pkg/iam/azureiam"
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/iam/azureiam"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
 )
 

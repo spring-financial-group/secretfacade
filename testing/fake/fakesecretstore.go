@@ -3,7 +3,7 @@ package fake
 import (
 	"fmt"
 
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
 )
 
 func NewFakeSecretStore() *FakeSecretStore {

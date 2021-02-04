@@ -11,13 +11,13 @@ each of the various secret stores.
 To install, run:
 
 ```
-$ go get github.com/chrismellard/secretfacade
+$ go get github.com/jenkins-x-plugins/secretfacade
 ```
 
 And import using:
 
 ```
-import "github.com/chrismellard/secretfacade"
+import "github.com/jenkins-x-plugins/secretfacade"
 ```
 
 Usage:
@@ -28,8 +28,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
-	"github.com/chrismellard/secretfacade/pkg/secretstore/factory"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/factory"
 )
 
 func main() {
