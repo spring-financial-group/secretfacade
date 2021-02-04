@@ -30,7 +30,7 @@ type vaultSecretManager struct {
 
 func (v vaultSecretManager) GetSecret(location string, secretName string, secretKey string) (string, error) {
 	secret, err := getSecret(v.vaultApi, location, secretName)
-	if err != nil {
+	if err != nil || secret == nil {
 		return "", errors.Wrapf(err, "error getting secret %s from Hasicorp vault %s", secretName, location)
 	}
 	mapData, err := getSecretData(secret)
