@@ -1,0 +1,16 @@
+apiVersion: updatebot.jenkins-x.io/v1alpha1
+kind: UpdateConfig
+spec:
+  rules:
+  - changes:
+    - go:
+        owner:
+        - jenkins-x
+        repositories:
+          include:
+          - jx-secret
+        package: github.com/jenkins-x-plugins/secretfacade
+        upgradePackages:
+          include:
+          - "github.com/jenkins-x/*"
+          - "github.com/jenkins-x-plugins/*"
