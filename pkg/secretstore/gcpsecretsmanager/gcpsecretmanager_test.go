@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chrismellard/secretfacade/pkg/iam/gcpiam"
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
-	"github.com/chrismellard/secretfacade/pkg/secretstore/gcpsecretsmanager"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/iam/gcpiam"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/gcpsecretsmanager"
 	"github.com/stretchr/testify/assert"
 )
 

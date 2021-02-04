@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
-	"github.com/chrismellard/secretfacade/pkg/secretstore/awssecretsmanager"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/awssecretsmanager"
 	"github.com/stretchr/testify/assert"
 )
 

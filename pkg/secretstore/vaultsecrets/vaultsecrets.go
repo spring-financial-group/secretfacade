@@ -3,8 +3,8 @@ package vaultsecrets
 import (
 	"fmt"
 
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
 	"github.com/hashicorp/vault/api"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
 )
 

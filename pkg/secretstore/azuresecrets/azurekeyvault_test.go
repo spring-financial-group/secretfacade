@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/chrismellard/secretfacade/pkg/iam/azureiam"
-	"github.com/chrismellard/secretfacade/pkg/secretstore"
-	"github.com/chrismellard/secretfacade/pkg/secretstore/azuresecrets"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/iam/azureiam"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/azuresecrets"
 	"github.com/stretchr/testify/assert"
 )
 
