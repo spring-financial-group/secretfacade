@@ -5,7 +5,7 @@ spec:
   - changes:
     - go:
         owner:
-        - jenkins-x
+        - jenkins-x-plugins
         repositories:
           include:
           - jx-secret
