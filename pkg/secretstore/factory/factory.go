@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x-plugins/secretfacade/pkg/iam/kubernetesiam"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/iam/vaultiam"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
+	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/awssystemmanager"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/awssecretsmanager"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/azuresecrets"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore/gcpsecretsmanager"
@@ -45,12 +46,18 @@ func (_ SecretManagerFactory) NewSecretManager(storeType secretstore.SecretStore
 			return nil, errors.Wrap(err, "error getting Hashicorp Vault creds when attempting to create secret manager via factory")
 		}
 		return vaultsecrets.NewVaultSecretManager(creds.Token, creds.CaCertPath)
-	case secretstore.SecretStoreTypeAws:
+	case secretstore.SecretStoreTypeAwsASM:
 		sess, err := session.NewSession()
 		if err != nil {
 			return nil, errors.Wrap(err, "error getting AWS creds when attempting to create secret manager via factory")
 		}
 		return awssecretsmanager.NewAwsSecretManager(sess), nil
+	case secretstore.SecretStoreTypeAwsSSM:
+		sess, err := session.NewSession()
+		if err != nil {
+			return nil, errors.Wrap(err, "error getting AWS creds when attempting to create secret manager via factory")
+		}
+		return awssystemmanager.NewAwsSystemManager(sess), nil
 	}
 	return nil, fmt.Errorf("unable to create manager for storeType %s", string(storeType))
 }

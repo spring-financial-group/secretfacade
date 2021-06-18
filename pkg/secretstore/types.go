@@ -9,5 +9,6 @@ const (
 	SecretStoreTypeGoogle     SecretStoreType = "gcpSecretsManager"
 	SecretStoreTypeKubernetes SecretStoreType = "kubernetes"
 	SecretStoreTypeVault      SecretStoreType = "vault"
-	SecretStoreTypeAws        SecretStoreType = "secretsManager"
+	SecretStoreTypeAwsASM     SecretStoreType = "secretsManager"
+	SecretStoreTypeAwsSSM     SecretStoreType = "systemManager"
 )
