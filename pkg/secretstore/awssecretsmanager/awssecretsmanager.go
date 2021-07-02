@@ -33,7 +33,18 @@ func (a awsSecretsManager) GetSecret(location string, secretName string, _ strin
 }
 
 func (a awsSecretsManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
-	if secretExists(a.session, &location, &secretName) {
+	secret := existingSecret(a.session, &location, &secretName)
+	if secret != nil {
+		input := &secretsmanager.GetSecretValueInput{
+			SecretId: secret.ARN,
+		}
+		mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
+		// mgr.Config.Region = &location
+		oldSecret, err := mgr.GetSecretValue(input)
+		if err == nil {
+			value := oldSecret.SecretString
+
+		}
 		return nil
 	} else {
 		if secretValue.Value == "" && secretValue.PropertyValues != nil {
@@ -41,21 +52,21 @@ func (a awsSecretsManager) SetSecret(location string, secretName string, secretV
 			secretValue.Value = string(str)
 		}
 		input := &secretsmanager.CreateSecretInput{
-			Name:               &secretName,
-			SecretString:       &secretValue.Value,
+			Name:         &secretName,
+			SecretString: &secretValue.Value,
 		}
 		mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
 		// mgr.Config.Region = &location
 		_, err := mgr.CreateSecret(input)
 		if err != nil {
 			aerr := err.(awserr.Error)
-			return errors.Wrap(aerr.OrigErr(), "error setting secret for aws secret manager: " + aerr.Error())
+			return errors.Wrap(aerr.OrigErr(), "error setting secret for aws secret manager: "+aerr.Error())
 		}
 		return nil
 	}
 }
 
-func secretExists(session *session.Session, location, secretName *string) bool {
+func existingSecret(session *session.Session, location, secretName *string) *secretsmanager.SecretListEntry {
 	// ListSecret
 	maxResults := int64(1)
 	nameFilterKey := secretsmanager.FilterNameStringTypeName
@@ -68,10 +79,12 @@ func secretExists(session *session.Session, location, secretName *string) bool {
 		MaxResults: &maxResults,
 	}
 
-	mgr := secretsmanager.New(session, aws.NewConfig().WithRegion(*location))
-	secrets, err := mgr.ListSecrets(input)
+	svc := secretsmanager.New(session, aws.NewConfig().WithRegion(*location))
+	secrets, err := svc.ListSecrets(input)
 	if err == nil {
-		return len(secrets.SecretList) >= 1
+		if len(secrets.SecretList) >= 1 {
+			return secrets.SecretList[0]
+		}
 	}
-	return false
+	return nil
 }
