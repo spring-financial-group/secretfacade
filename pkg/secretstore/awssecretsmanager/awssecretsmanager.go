@@ -32,59 +32,54 @@ func (a awsSecretsManager) GetSecret(location string, secretName string, _ strin
 	return *result.SecretString, nil
 }
 
-func (a awsSecretsManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
-	secret := existingSecret(a.session, &location, &secretName)
+func (a awsSecretsManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) (err error) {
+	secret, err := existingSecret(a.session, &location, &secretName)
+	if err != nil {
+		return errors.Wrap(err, "error checking for existing secret:")
+	}
 	if secret != nil {
+		// Get, Merge and Update
 		input := &secretsmanager.GetSecretValueInput{
 			SecretId: secret.ARN,
 		}
 		mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
 		// mgr.Config.Region = &location
-		oldSecret, err := mgr.GetSecretValue(input)
-		if err == nil {
-			value := oldSecret.SecretString
-
-		}
-		return nil
-	} else {
-		if secretValue.Value == "" && secretValue.PropertyValues != nil {
-			str, _ := json.Marshal(secretValue.PropertyValues)
-			secretValue.Value = string(str)
-		}
-		input := &secretsmanager.CreateSecretInput{
-			Name:         &secretName,
-			SecretString: &secretValue.Value,
-		}
-		mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
-		// mgr.Config.Region = &location
-		_, err := mgr.CreateSecret(input)
-		if err != nil {
-			aerr := err.(awserr.Error)
-			return errors.Wrap(aerr.OrigErr(), "error setting secret for aws secret manager: "+aerr.Error())
-		}
-		return nil
+		_, _ = mgr.GetSecretValue(input)
+		return
 	}
+
+	if secretValue.Value == "" && secretValue.PropertyValues != nil {
+		str, _ := json.Marshal(secretValue.PropertyValues)
+		secretValue.Value = string(str)
+	}
+	input := &secretsmanager.CreateSecretInput{
+		Name:         &secretName,
+		SecretString: &secretValue.Value,
+	}
+	svc := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
+	// mgr.Config.Region = &location
+	_, err = svc.CreateSecret(input)
+	if err != nil {
+		return errors.Wrap(err, "error setting secret for aws secret manager: ")
+	}
+	return
 }
 
-func existingSecret(session *session.Session, location, secretName *string) *secretsmanager.SecretListEntry {
-	// ListSecret
-	maxResults := int64(1)
-	nameFilterKey := secretsmanager.FilterNameStringTypeName
+func existingSecret(session *session.Session, location, secretName *string) (secret *secretsmanager.SecretListEntry, err error) {
 	nameFilter := &secretsmanager.Filter{
-		Key:    &nameFilterKey,
+		Key:    aws.String(secretsmanager.FilterNameStringTypeName),
 		Values: []*string{secretName},
 	}
 	input := &secretsmanager.ListSecretsInput{
 		Filters:    []*secretsmanager.Filter{nameFilter},
-		MaxResults: &maxResults,
+		MaxResults: aws.Int64(int64(1)),
 	}
 
 	svc := secretsmanager.New(session, aws.NewConfig().WithRegion(*location))
 	secrets, err := svc.ListSecrets(input)
-	if err == nil {
-		if len(secrets.SecretList) >= 1 {
-			return secrets.SecretList[0]
-		}
+	if err != nil {
+		return
 	}
-	return nil
+	secret = secrets.SecretList[0]
+	return
 }
