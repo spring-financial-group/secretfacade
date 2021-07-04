@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
@@ -32,29 +31,42 @@ func (a awsSecretsManager) GetSecret(location string, secretName string, _ strin
 	return *result.SecretString, nil
 }
 
-func (a awsSecretsManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) (err error) {
-	secret, err := existingSecret(a.session, &location, &secretName)
+func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) (err error) {
+	secretEntry, err := existingSecret(a.session, &location, &secretName)
 	if err != nil {
-		return errors.Wrap(err, "error checking for existing secret:")
+		return errors.Wrap(err, "error searching for existing secret: ")
 	}
-	if secret != nil {
+	if secretEntry != nil {
 		// Get, Merge and Update
-		input := &secretsmanager.GetSecretValueInput{
-			SecretId: secret.ARN,
+		var existingSecretProps map[string]string
+		secret, err := getExistingSecret(a.session, location, secretName)
+		if err != nil {
+			return errors.Wrap(err, "error retreiving existing secret: ")
 		}
-		mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
-		// mgr.Config.Region = &location
-		_, _ = mgr.GetSecretValue(input)
-		return
+		// FIXME: If secretValue is Simple, AND then secret.SecretString is Simple.
+		// getSecretPropertyMap fails
+		if secretValue.Value == "" && secretValue.PropertyValues != nil {
+			existingSecretProps, err = getSecretPropertyMap(secret.SecretString)
+			if err != nil {
+				return errors.Wrap(err, "error parsing existing secret: ")
+			}
+		}
+
+		input := &secretsmanager.UpdateSecretInput{
+			SecretId:     secret.ARN,
+			SecretString: aws.String(secretValue.MergeExistingSecret(existingSecretProps)),
+		}
+		svc := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
+		_, err = svc.UpdateSecret(input)
+		if err != nil {
+			return errors.Wrap(err, "error updating existing secret: ")
+		}
+		return nil
 	}
 
-	if secretValue.Value == "" && secretValue.PropertyValues != nil {
-		str, _ := json.Marshal(secretValue.PropertyValues)
-		secretValue.Value = string(str)
-	}
 	input := &secretsmanager.CreateSecretInput{
 		Name:         &secretName,
-		SecretString: &secretValue.Value,
+		SecretString: aws.String(secretValue.ToString()),
 	}
 	svc := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
 	// mgr.Config.Region = &location
@@ -80,6 +92,30 @@ func existingSecret(session *session.Session, location, secretName *string) (sec
 	if err != nil {
 		return
 	}
-	secret = secrets.SecretList[0]
+	if len(secrets.SecretList) > 0 {
+		secret = secrets.SecretList[0]
+		return
+	}
 	return
+}
+
+func getExistingSecret(session *session.Session, location, secretName string) (secret *secretsmanager.GetSecretValueOutput, err error) {
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId: &secretName,
+	}
+	svc := secretsmanager.New(session, aws.NewConfig().WithRegion(location))
+	secret, err = svc.GetSecretValue(input)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func getSecretPropertyMap(value *string) (map[string]string, error) {
+	m := make(map[string]string)
+	err := json.Unmarshal([]byte(*value), &m)
+	if err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling AWS secrets manager secret payload in to map[string]string")
+	}
+	return m, nil
 }
