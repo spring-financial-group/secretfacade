@@ -32,36 +32,10 @@ func (a awsSecretsManager) GetSecret(location string, secretName string, _ strin
 }
 
 func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) (err error) {
-	secretEntry, err := existingSecret(a.session, &location, &secretName)
-	if err != nil {
-		return errors.Wrap(err, "error searching for existing secret: ")
-	}
-	if secretEntry != nil {
-		// Get, Merge and Update
-		var existingSecretProps map[string]string
-		secret, err := getExistingSecret(a.session, location, secretName)
-		if err != nil {
-			return errors.Wrap(err, "error retreiving existing secret: ")
-		}
-		// FIXME: If secretValue is Simple, AND then secret.SecretString is Simple.
-		// getSecretPropertyMap fails
-		if secretValue.Value == "" && secretValue.PropertyValues != nil {
-			existingSecretProps, err = getSecretPropertyMap(secret.SecretString)
-			if err != nil {
-				return errors.Wrap(err, "error parsing existing secret: ")
-			}
-		}
 
-		input := &secretsmanager.UpdateSecretInput{
-			SecretId:     secret.ARN,
-			SecretString: aws.String(secretValue.MergeExistingSecret(existingSecretProps)),
-		}
-		svc := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
-		_, err = svc.UpdateSecret(input)
-		if err != nil {
-			return errors.Wrap(err, "error updating existing secret: ")
-		}
-		return nil
+	err = updateExistingSecret(a.session, *secretValue, &location, &secretName)
+	if err != nil {
+		return errors.Wrap(err, "error updating existing secret for aws secret manager: ")
 	}
 
 	input := &secretsmanager.CreateSecretInput{
@@ -75,6 +49,38 @@ func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *s
 		return errors.Wrap(err, "error setting secret for aws secret manager: ")
 	}
 	return
+}
+
+func updateExistingSecret(session *session.Session, sv secretstore.SecretValue, location, secretName *string) (err error) {
+	_, err = existingSecret(session, location, secretName)
+	if err != nil {
+		return errors.Wrap(err, "error searching for existing secret: ")
+	}
+	// Get, Merge and Update
+	var existingSecretProps map[string]string
+	secret, err := getExistingSecret(session, *location, *secretName)
+	if err != nil {
+		return errors.Wrap(err, "error retreiving existing secret: ")
+	}
+	// FIXME: If secretValue is Simple, AND then secret.SecretString is Simple.
+	// getSecretPropertyMap fails
+	if sv.Value == "" && sv.PropertyValues != nil {
+		existingSecretProps, err = getSecretPropertyMap(secret.SecretString)
+		if err != nil {
+			return errors.Wrap(err, "error parsing existing secret: ")
+		}
+	}
+
+	input := &secretsmanager.UpdateSecretInput{
+		SecretId:     secret.ARN,
+		SecretString: aws.String(sv.MergeExistingSecret(existingSecretProps)),
+	}
+	svc := secretsmanager.New(session, aws.NewConfig().WithRegion(*location))
+	_, err = svc.UpdateSecret(input)
+	if err != nil {
+		return errors.Wrap(err, "error updating existing secret: ")
+	}
+	return nil
 }
 
 func existingSecret(session *session.Session, location, secretName *string) (secret *secretsmanager.SecretListEntry, err error) {
@@ -92,10 +98,11 @@ func existingSecret(session *session.Session, location, secretName *string) (sec
 	if err != nil {
 		return
 	}
-	if len(secrets.SecretList) > 0 {
-		secret = secrets.SecretList[0]
+	if len(secrets.SecretList) == 0 {
+		err = errors.New("no existing secrets")
 		return
 	}
+	secret = secrets.SecretList[0]
 	return
 }
 
