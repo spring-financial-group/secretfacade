@@ -19,18 +19,31 @@ type awsSecretsManager struct {
 	session *session.Session
 }
 
-func (a awsSecretsManager) GetSecret(location string, secretName string, _ string) (string, error) {
-	input := &secretsmanager.GetSecretValueInput{
-		SecretId: aws.String(secretName),
-	}
-	mgr := secretsmanager.New(a.session, aws.NewConfig().WithRegion(location))
-	mgr.Config.Region = &location
-	result, err := mgr.GetSecretValue(input)
+func (a awsSecretsManager) GetSecret(location string, secretName string, propertyName string) (string, error) {
+	secret, err := getExistingSecret(a.session, location, secretName)
 	if err != nil {
-		return "", errors.Wrap(err, "error retrieving secret from aws secret manager")
+		return "", errors.Wrap(err, "error retrieving existing secret for aws secret manager: ")
 	}
-	return *result.SecretString, nil
+
+	if propertyName != "" {
+		secretString, err := getSecretProperty(secret, propertyName)
+		if err != nil {
+			return "", errors.Wrapf(err, "error retrieving secret property from secret %s returned from AWS secrets manager: ", secretName)
+		}
+		return secretString, nil
+	}
+
+	return *secret.SecretString, nil
 }
+
+func getSecretProperty(s *secretsmanager.GetSecretValueOutput, propertyName string) (string, error) {
+	m, err := getSecretPropertyMap(s.SecretString)
+	if err != nil {
+		return "", errors.Wrapf(err, "error reading property %s from secret JSON object", propertyName)
+	}
+	return m[propertyName], nil
+}
+
 
 func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) (err error) {
 	// CreateSecret
