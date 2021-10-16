@@ -8,19 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewVaultSecretManager(vaultToken string, caCertPath string) (secretstore.Interface, error) {
-	config := api.Config{}
-	err := config.ConfigureTLS(&api.TLSConfig{
-		CACert: caCertPath,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error configuring TLS ca cert for Hashicorp Vault API")
-	}
-	client, err := api.NewClient(nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating Hasicorp Vault API client")
-	}
-	client.SetToken(vaultToken)
+func NewVaultSecretManager(client *api.Client) (secretstore.Interface, error) {
 	return &vaultSecretManager{client}, nil
 }
 

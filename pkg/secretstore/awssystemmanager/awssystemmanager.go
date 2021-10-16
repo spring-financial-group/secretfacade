@@ -2,8 +2,8 @@ package awssystemmanager
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ type awsSystemManager struct {
 
 func (a awsSystemManager) GetSecret(location string, secretName string, _ string) (string, error) {
 	input := &ssm.GetParameterInput{
-		Name:           aws.String(secretName),
+		Name: aws.String(secretName),
 	}
 	mgr := ssm.New(a.session, aws.NewConfig().WithRegion(location))
 	mgr.Config.Region = &location
@@ -32,8 +32,8 @@ func (a awsSystemManager) GetSecret(location string, secretName string, _ string
 
 func (a awsSystemManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
 	input := &ssm.PutParameterInput{
-		Name:           &secretName,
-		Value:          &secretValue.Value,
+		Name:  &secretName,
+		Value: &secretValue.Value,
 	}
 	mgr := ssm.New(a.session, aws.NewConfig().WithRegion(location))
 	mgr.Config.Region = &location
@@ -46,7 +46,7 @@ func (a awsSystemManager) SetSecret(location string, secretName string, secretVa
 				return errors.Wrap(err, "Secret Already Exists")
 			}
 			return errors.Wrap(err, "error setting secret for aws parameter store")
-	}
+		}
 	}
 	return nil
 }
