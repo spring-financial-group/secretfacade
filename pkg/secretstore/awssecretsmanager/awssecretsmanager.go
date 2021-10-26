@@ -44,7 +44,6 @@ func getSecretProperty(s *secretsmanager.GetSecretValueOutput, propertyName stri
 	return m[propertyName], nil
 }
 
-
 func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) (err error) {
 	// CreateSecret
 	_, err = createSecret(a.session, location, secretName, *secretValue)

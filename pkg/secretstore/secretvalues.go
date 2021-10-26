@@ -2,6 +2,7 @@ package secretstore
 
 import (
 	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/imdario/mergo"
@@ -38,11 +39,13 @@ func (sv *SecretValue) MergeExistingSecret(existing map[string]string) string {
 		return sv.Value
 	}
 	err := mergo.Merge(&existing, sv.PropertyValues, mergo.WithOverride)
+	if err != nil {
+		return "{}"
+	}
 
 	j, err := json.Marshal(existing)
 	if err != nil {
 		return "{}"
 	}
 	return string(j)
-
 }
