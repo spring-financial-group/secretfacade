@@ -20,8 +20,8 @@ type azureKeyVaultSecretManager struct {
 	Creds azureiam.Credentials
 }
 
-func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName string, secretKey string) (string, error) {
-	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
+func (a *azureKeyVaultSecretManager) GetSecret(vaultName, secretName, secretKey string) (string, error) {
+	vaultURL, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
 		return "", errors.Wrapf(err, "error getting secret for Azure Key Vault for secret %s from vault %s", secretName, vaultName)
 	}
@@ -29,12 +29,12 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create key ops client")
 	}
-	bundle, err := keyClient.GetSecret(context.TODO(), vaultUrl.String(), secretName, "")
+	bundle, err := keyClient.GetSecret(context.TODO(), vaultURL.String(), secretName, "")
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to retrieve secret %s from vault %s", secretName, vaultUrl)
+		return "", errors.Wrapf(err, "unable to retrieve secret %s from vault %s", secretName, vaultURL)
 	}
 	if bundle.Value == nil {
-		return "", errors.Wrapf(err, "secret is empty for secret %s in vault %s", secretName, vaultUrl)
+		return "", errors.Wrapf(err, "secret is empty for secret %s in vault %s", secretName, vaultURL)
 	}
 	var secretString string
 	if secretKey != "" {
@@ -48,8 +48,8 @@ func (a *azureKeyVaultSecretManager) GetSecret(vaultName string, secretName stri
 	return secretString, nil
 }
 
-func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName string, secretValue *secretstore.SecretValue) error {
-	vaultUrl, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
+func (a *azureKeyVaultSecretManager) SetSecret(vaultName, secretName string, secretValue *secretstore.SecretValue) error {
+	vaultURL, err := url.Parse(fmt.Sprintf("https://%s.vault.azure.net/", vaultName))
 	if err != nil {
 		return errors.Wrapf(err, "error setting Azure Key Vault secret %s in vault %s", secretName, vaultName)
 	}
@@ -61,7 +61,7 @@ func (a *azureKeyVaultSecretManager) SetSecret(vaultName string, secretName stri
 	params := kvops.SecretSetParameters{
 		Value: &secretString,
 	}
-	_, err = keyClient.SetSecret(context.TODO(), vaultUrl.String(), secretName, params)
+	_, err = keyClient.SetSecret(context.TODO(), vaultURL.String(), secretName, params)
 
 	if err != nil {
 		return errors.Wrap(err, "unable to create key ops client")

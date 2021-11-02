@@ -13,11 +13,11 @@ func NewVaultSecretManager(client *api.Client) (secretstore.Interface, error) {
 }
 
 type vaultSecretManager struct {
-	vaultApi *api.Client
+	vaultAPI *api.Client
 }
 
-func (v vaultSecretManager) GetSecret(location string, secretName string, secretKey string) (string, error) {
-	secret, err := getSecret(v.vaultApi, location, secretName)
+func (v vaultSecretManager) GetSecret(location, secretName, secretKey string) (string, error) {
+	secret, err := getSecret(v.vaultAPI, location, secretName)
 	if err != nil || secret == nil {
 		return "", errors.Wrapf(err, "error getting secret %s from Hasicorp vault %s", secretName, location)
 	}
@@ -32,8 +32,8 @@ func (v vaultSecretManager) GetSecret(location string, secretName string, secret
 	return secretString, nil
 }
 
-func (v vaultSecretManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
-	secret, err := getSecret(v.vaultApi, location, secretName)
+func (v vaultSecretManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) error {
+	secret, err := getSecret(v.vaultAPI, location, secretName)
 	if err != nil {
 		return errors.Wrapf(err, "error getting secret %s in Hashicorp vault %s prior to setting", secretName, location)
 	}
@@ -53,14 +53,14 @@ func (v vaultSecretManager) SetSecret(location string, secretName string, secret
 		"data": newSecretData,
 	}
 
-	_, err = v.vaultApi.Logical().Write(secretName, data)
+	_, err = v.vaultAPI.Logical().Write(secretName, data)
 	if err != nil {
 		return errors.Wrapf(err, "error writing secret %s to Hashicorp Vault %s", secretName, location)
 	}
 	return nil
 }
 
-func getSecret(client *api.Client, location string, secretName string) (*api.Secret, error) {
+func getSecret(client *api.Client, location, secretName string) (*api.Secret, error) {
 	err := client.SetAddress(location)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error setting location of Hashicorp vault %s on client", location)

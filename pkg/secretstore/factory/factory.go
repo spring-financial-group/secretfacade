@@ -22,7 +22,7 @@ import (
 
 type SecretManagerFactory struct{}
 
-func (_ SecretManagerFactory) NewSecretManager(storeType secretstore.SecretStoreType) (secretstore.Interface, error) {
+func (smf SecretManagerFactory) NewSecretManager(storeType secretstore.Type) (secretstore.Interface, error) {
 	switch storeType {
 	case secretstore.SecretStoreTypeAzure:
 		envCreds, err := azureiam.NewEnvironmentCredentials()

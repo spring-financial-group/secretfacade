@@ -44,7 +44,7 @@ func TestNewVaultSecretManager(t *testing.T) {
 	os.Setenv("EXTERNAL_VAULT", "true")
 	os.Setenv("JX_VAULT_MOUNT_POINT", "kubernetes")
 	os.Setenv("JX_VAULT_ROLE", "role")
-	kClient := fake.NewSimpleClientset(&corev1.Secret{
+	kubeClient := fake.NewSimpleClientset(&corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "",
 			APIVersion: "",
@@ -86,7 +86,7 @@ func TestNewVaultSecretManager(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
 		// If you decode the test json, then the value of kubernetes.io/serviceaccount/service-account.uid is 424d91ce-20e3-48a2-b1e5-394e6a0c1813
-		rw.Write([]byte(`{"status": {"authenticated": true, "user":{"uid":"424d91ce-20e3-48a2-b1e5-394e6a0c1813","username": "system:serviceaccount:secret-infra:default"}}}`))
+		_, _ = rw.Write([]byte(`{"status": {"authenticated": true, "user":{"uid":"424d91ce-20e3-48a2-b1e5-394e6a0c1813","username": "system:serviceaccount:secret-infra:default"}}}`))
 	}))
 	defer server.Close()
 	// Create config
@@ -112,7 +112,7 @@ func TestNewVaultSecretManager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	creds, err := vaultiam.NewExternalSecretCreds(client, kClient)
+	creds, err := vaultiam.NewExternalSecretCreds(client, kubeClient)
 	if err != nil {
 		t.Fatal(err)
 	}

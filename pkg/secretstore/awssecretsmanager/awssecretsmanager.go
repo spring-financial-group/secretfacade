@@ -19,7 +19,7 @@ type awsSecretsManager struct {
 	session *session.Session
 }
 
-func (a awsSecretsManager) GetSecret(location string, secretName string, propertyName string) (string, error) {
+func (a awsSecretsManager) GetSecret(location, secretName, propertyName string) (string, error) {
 	secret, err := getExistingSecret(a.session, location, secretName)
 	if err != nil {
 		return "", errors.Wrap(err, "error retrieving existing secret for aws secret manager: ")
@@ -46,7 +46,7 @@ func getSecretProperty(s *secretsmanager.GetSecretValueOutput, propertyName stri
 
 func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) (err error) {
 	// CreateSecret
-	_, err = createSecret(a.session, location, secretName, *secretValue)
+	err = createSecret(a.session, location, secretName, *secretValue)
 	if err != nil {
 		// Don't return if secret already exists.
 		if err.(awserr.Error).Code() != secretsmanager.ErrCodeResourceExistsException {
@@ -70,15 +70,15 @@ func (a awsSecretsManager) SetSecret(location, secretName string, secretValue *s
 		}
 	}
 
-	err = updateSecret(a.session, secret, secretValue.MergeExistingSecret(existingSecretProps), location, secretName)
+	err = updateSecret(a.session, secret, secretValue.MergeExistingSecret(existingSecretProps), location)
 	if err != nil {
 		return errors.Wrap(err, "error updating existing secret for aws secret manager: ")
 	}
 
-	return
+	return nil
 }
 
-func updateSecret(session *session.Session, secret *secretsmanager.GetSecretValueOutput, newValue, location, secretName string) (err error) {
+func updateSecret(session *session.Session, secret *secretsmanager.GetSecretValueOutput, newValue, location string) (err error) {
 	input := &secretsmanager.PutSecretValueInput{
 		SecretId:     secret.ARN,
 		SecretString: aws.String(newValue),
@@ -103,18 +103,17 @@ func getExistingSecret(session *session.Session, location, secretName string) (s
 	return
 }
 
-func createSecret(session *session.Session, location string, secretName string, secretValue secretstore.SecretValue) (secret *secretsmanager.GetSecretValueOutput, err error) {
+func createSecret(session *session.Session, location, secretName string, secretValue secretstore.SecretValue) (err error) {
 	input := &secretsmanager.CreateSecretInput{
 		Name:         &secretName,
 		SecretString: aws.String(secretValue.ToString()),
 	}
 	svc := secretsmanager.New(session, aws.NewConfig().WithRegion(location))
-	// svc.Config.Region = &location
 	_, err = svc.CreateSecret(input)
 	if err != nil {
-		return
+		return err
 	}
-	return
+	return nil
 }
 
 func getSecretPropertyMap(value *string) (map[string]string, error) {

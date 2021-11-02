@@ -17,7 +17,7 @@ type awsSystemManager struct {
 	session *session.Session
 }
 
-func (a awsSystemManager) GetSecret(location string, secretName string, _ string) (string, error) {
+func (a awsSystemManager) GetSecret(location, secretName, _ string) (string, error) {
 	input := &ssm.GetParameterInput{
 		Name: aws.String(secretName),
 	}
@@ -30,7 +30,7 @@ func (a awsSystemManager) GetSecret(location string, secretName string, _ string
 	return result.String(), nil
 }
 
-func (a awsSystemManager) SetSecret(location string, secretName string, secretValue *secretstore.SecretValue) error {
+func (a awsSystemManager) SetSecret(location, secretName string, secretValue *secretstore.SecretValue) error {
 	input := &ssm.PutParameterInput{
 		Name:  &secretName,
 		Value: &secretValue.Value,
@@ -41,8 +41,7 @@ func (a awsSystemManager) SetSecret(location string, secretName string, secretVa
 	_, err := mgr.PutParameter(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case ssm.ErrCodeParameterAlreadyExists:
+			if aerr.Code() == ssm.ErrCodeParameterAlreadyExists {
 				return errors.Wrap(err, "Secret Already Exists")
 			}
 			return errors.Wrap(err, "error setting secret for aws parameter store")
