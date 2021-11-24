@@ -25,27 +25,30 @@ type gcpSecretsManager struct {
 	creds google.Credentials
 }
 
-func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secretValue *secretstore.SecretValue) error {
+func (g *gcpSecretsManager) SetSecret(projectID, secretName string, secretValue *secretstore.SecretValue) error {
 
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
-		return errors.Wrapf(err, "error setting GCP Secrets Manager secret %s in project %s", secretName, projectId)
+		return errors.Wrapf(err, "error setting GCP Secrets Manager secret %s in project %s", secretName, projectID)
 	}
 	defer closer()
 
 	var existingSecretProps map[string]string
-	secret, err := getSecret(client, projectId, secretName)
+	secret, err := getSecret(client, projectID, secretName)
 	if err != nil {
-		secret, err = createSecret(client, projectId, secretName)
+		secret, err = createSecret(client, projectID, secretName)
 		if err != nil {
-			return errors.Wrapf(err, "error creating new secret %s in GCP secret manager project %s", secretName, projectId)
+			return errors.Wrapf(err, "error creating new secret %s in GCP secret manager project %s", secretName, projectID)
 		}
 	} else if secretValue.Value == "" && secretValue.PropertyValues != nil {
-		sv, err := getSecretValue(client, projectId, secretName)
+		sv, err := getSecretValue(client, projectID, secretName)
 		if err != nil {
-			return errors.Wrapf(err, "error getting GCP secrets manager secret value for secret name %s in project %s", secretName, projectId)
+			return errors.Wrapf(err, "error getting GCP secrets manager secret value for secret name %s in project %s", secretName, projectID)
 		}
 		existingSecretProps, err = getSecretPropertyMap(sv)
+		if err != nil {
+			return errors.Wrap(err, "error getting secret property map")
+		}
 	}
 
 	req := &secretmanagerpb.AddSecretVersionRequest{
@@ -56,27 +59,27 @@ func (g *gcpSecretsManager) SetSecret(projectId string, secretName string, secre
 	}
 	_, err = client.AddSecretVersion(context.TODO(), req)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set secret %s in GCP secret manager project %s", secretName, projectId)
+		return errors.Wrapf(err, "unable to set secret %s in GCP secret manager project %s", secretName, projectID)
 	}
 	return nil
 }
 
-func (_ *gcpSecretsManager) GetSecret(projectId string, secretName string, secretKey string) (string, error) {
+func (g *gcpSecretsManager) GetSecret(projectID, secretName, secretKey string) (string, error) {
 	client, closer, err := getSecretOpsClient()
 	if err != nil {
 		return "", errors.Wrap(err, "error creating GCP secret manager client")
 	}
 	defer closer()
 
-	secret, err := getSecretValue(client, projectId, secretName)
+	secret, err := getSecretValue(client, projectID, secretName)
 	if err != nil {
-		return "", errors.Wrapf(err, "error getting secret %s for GCP secret manager in project %s", secretName, projectId)
+		return "", errors.Wrapf(err, "error getting secret %s for GCP secret manager in project %s", secretName, projectID)
 	}
 	var secretString string
 	if secretKey != "" {
 		secretString, err = getSecretProperty(secret, secretKey)
 		if err != nil {
-			return "", errors.Wrapf(err, "error retrieving secret property from secret %s returned from GCP secrets manager in project %s", secretName, projectId)
+			return "", errors.Wrapf(err, "error retrieving secret property from secret %s returned from GCP secrets manager in project %s", secretName, projectID)
 		}
 	} else {
 		secretString = string(secret.Data)
@@ -119,9 +122,9 @@ func getSecretOpsClient() (*secretmanager.Client, func(), error) {
 	return client, func() { _ = client.Close() }, nil
 }
 
-func createSecret(client *secretmanager.Client, projectId string, secretName string) (*secretmanagerpb.Secret, error) {
+func createSecret(client *secretmanager.Client, projectID, secretName string) (*secretmanagerpb.Secret, error) {
 	req := &secretmanagerpb.CreateSecretRequest{
-		Parent:   fmt.Sprintf("projects/%s", projectId),
+		Parent:   fmt.Sprintf("projects/%s", projectID),
 		SecretId: secretName,
 		Secret: &secretmanagerpb.Secret{
 			Replication: &secretmanagerpb.Replication{
@@ -133,32 +136,32 @@ func createSecret(client *secretmanager.Client, projectId string, secretName str
 	}
 	secret, err := client.CreateSecret(context.TODO(), req)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error creating secret %s in GCP secrets manager for project %s", secretName, projectId)
+		return nil, errors.Wrapf(err, "error creating secret %s in GCP secrets manager for project %s", secretName, projectID)
 	}
 	return secret, nil
 }
 
-func getSecret(client *secretmanager.Client, projectId string, secretName string) (*secretmanagerpb.Secret, error) {
+func getSecret(client *secretmanager.Client, projectID, secretName string) (*secretmanagerpb.Secret, error) {
 
 	req := &secretmanagerpb.GetSecretRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s", projectId, secretName),
+		Name: fmt.Sprintf("projects/%s/secrets/%s", projectID, secretName),
 	}
 	secret, err := client.GetSecret(context.TODO(), req)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting secret %s for GCP secrets manager project %s", secretName, projectId)
+		return nil, errors.Wrapf(err, "error getting secret %s for GCP secrets manager project %s", secretName, projectID)
 	}
 	return secret, nil
 }
 
-func getSecretValue(client *secretmanager.Client, projectId string, secretName string) (*secretmanagerpb.SecretPayload, error) {
+func getSecretValue(client *secretmanager.Client, projectID, secretName string) (*secretmanagerpb.SecretPayload, error) {
 
 	req := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", projectId, secretName),
+		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", projectID, secretName),
 	}
 	secret, err := client.AccessSecretVersion(context.TODO(), req)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting secret value for secret %s for GCP secrets manager project %s", secretName, projectId)
+		return nil, errors.Wrapf(err, "error getting secret value for secret %s for GCP secrets manager project %s", secretName, projectID)
 	}
 	return secret.Payload, nil
 }

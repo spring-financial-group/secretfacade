@@ -26,7 +26,7 @@ type kubernetesSecretManager struct {
 	kubeClient kubernetes.Interface
 }
 
-func (k kubernetesSecretManager) GetSecret(namespace string, secretName string, secretKey string) (string, error) {
+func (k kubernetesSecretManager) GetSecret(namespace, secretName, secretKey string) (string, error) {
 	secret, err := k.kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get secret %s from namespace %s", secretName, namespace)
@@ -42,7 +42,7 @@ func (k kubernetesSecretManager) GetSecret(namespace string, secretName string, 
 	return "", fmt.Errorf("failed to get secret %s from namespace %s", secretName, namespace)
 }
 
-func (k kubernetesSecretManager) SetSecret(namespace string, secretName string, secretValue *secretstore.SecretValue) error {
+func (k kubernetesSecretManager) SetSecret(namespace, secretName string, secretValue *secretstore.SecretValue) error {
 	create := false
 	secretInterface := k.kubeClient.CoreV1().Secrets(namespace)
 	secret, err := secretInterface.Get(context.TODO(), secretName, metav1.GetOptions{})
@@ -172,13 +172,11 @@ func copySecretToNamespace(kubeClient kubernetes.Interface, ns string, fromSecre
 		if err != nil {
 			return errors.Wrapf(err, "failed to create Secret %s in namespace %s", name, ns)
 		}
-		//fmt.Printf("created replica Secret %s in namespace %s\n", name, ns)
 		return nil
 	}
 	_, err = secretInterface.Update(context.TODO(), secret, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to update Secret %s in namespace %s", name, ns)
 	}
-	//fmt.Printf("updated replica Secret %s in namespace %s\n", name, ns)
 	return nil
 }

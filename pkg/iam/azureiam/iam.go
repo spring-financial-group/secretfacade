@@ -41,8 +41,8 @@ func NewEnvironmentCredentials() (Credentials, error) {
 			return nil, fmt.Errorf("AZURE_TENANT_ID and AZURE_SUBSCRIPTION_ID are mandatory environment variables for MSI authentication")
 		}
 		return &environmentCredentials{
-			tenantId:           settings.Values[auth.TenantID],
-			subscriptionId:     settings.Values[auth.SubscriptionID],
+			tenantID:           settings.Values[auth.TenantID],
+			subscriptionID:     settings.Values[auth.SubscriptionID],
 			useManagedIdentity: true,
 		}, nil
 	}
@@ -52,24 +52,24 @@ func NewEnvironmentCredentials() (Credentials, error) {
 		return nil, fmt.Errorf("AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_SUBSCRIPTION_ID are mandatory environment variables for client credentials authentication")
 	}
 	return &environmentCredentials{
-		clientId:           settings.Values[auth.ClientID],
+		clientID:           settings.Values[auth.ClientID],
 		clientSecret:       settings.Values[auth.ClientSecret],
-		tenantId:           settings.Values[auth.TenantID],
-		subscriptionId:     settings.Values[auth.SubscriptionID],
+		tenantID:           settings.Values[auth.TenantID],
+		subscriptionID:     settings.Values[auth.SubscriptionID],
 		useManagedIdentity: false,
 	}, nil
 }
 
 type environmentCredentials struct {
-	clientId           string
+	clientID           string
 	clientSecret       string
-	tenantId           string
-	subscriptionId     string
+	tenantID           string
+	subscriptionID     string
 	useManagedIdentity bool
 }
 
 func (e environmentCredentials) ClientID() string {
-	return e.clientId
+	return e.clientID
 }
 
 func (e environmentCredentials) ClientSecret() string {
@@ -77,11 +77,11 @@ func (e environmentCredentials) ClientSecret() string {
 }
 
 func (e environmentCredentials) TenantID() string {
-	return e.tenantId
+	return e.tenantID
 }
 
 func (e environmentCredentials) SubscriptionID() string {
-	return e.subscriptionId
+	return e.subscriptionID
 }
 
 func (e environmentCredentials) UseManagedIdentity() bool {

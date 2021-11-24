@@ -6,5 +6,5 @@ type Interface interface {
 }
 
 type FactoryInterface interface {
-	NewSecretManager(storeType SecretStoreType) (Interface, error)
+	NewSecretManager(storeType Type) (Interface, error)
 }
