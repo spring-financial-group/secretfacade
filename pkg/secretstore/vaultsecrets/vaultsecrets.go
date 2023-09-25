@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/jenkins-x-plugins/secretfacade/pkg/secretstore"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func NewVaultSecretManager(client *api.Client) (secretstore.Interface, error) {
@@ -40,9 +41,11 @@ func (v vaultSecretManager) SetSecret(location, secretName string, secretValue *
 
 	newSecretData := map[string]interface{}{}
 	if secret != nil && !secretValue.Overwrite {
-		newSecretData, err = getSecretData(secret)
+		existingSecretData, err := getSecretData(secret)
 		if err != nil {
-			return errors.Wrapf(err, "error retrieving secret data in payload for secret %s in Hashicorp Vault %s", secretName, location)
+			logrus.WithError(err).Warnf("error retrieving existing secret data in payload for secret %s in Hashicorp Vault %s", secretName, location)
+		} else {
+			newSecretData = existingSecretData
 		}
 	}
 
